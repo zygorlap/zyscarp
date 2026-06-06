@@ -1,0 +1,21 @@
+{
+  "name": "zygor-scarper",
+  "version": "3.0.0",
+  "description": "GitHub Actions website mirror downloader with API discovery by @zygorlap",
+  "type": "module",
+  "main": "orchestrator.js",
+  "scripts": {
+    "start": "node orchestrator.js"
+  },
+  "keywords": ["website-mirror", "github-actions", "web-scraper", "zygorlap"],
+  "author": "@zygorlap",
+  "license": "MIT",
+  "engines": { "node": ">=18.0.0" },
+  "dependencies": {
+    "archiver": "^7.0.0",
+    "axios": "^1.6.0",
+    "bottleneck": "^2.19.5",
+    "cheerio": "^1.0.0-rc.12",
+    "playwright": "^1.40.0"
+  }
+}

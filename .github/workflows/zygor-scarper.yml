@@ -1,0 +1,121 @@
+name: Zygor Scarper
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Website URL to mirror"
+        required: true
+        type: string
+      project_name:
+        description: "Artifact name"
+        required: true
+        type: string
+      mode:
+        description: "Engine mode"
+        type: choice
+        options: [light, fast, complete, aggressive, nuclear]
+        default: fast
+      concurrent:
+        description: "Download threads"
+        type: string
+        default: "16"
+      enable_download:
+        description: "Mirror website"
+        type: boolean
+        default: true
+      enable_crawl:
+        description: "Deep crawl"
+        type: boolean
+        default: true
+      enable_api:
+        description: "API discovery"
+        type: boolean
+        default: true
+      enable_secrets:
+        description: "Security scan"
+        type: boolean
+        default: true
+      enable_screenshots:
+        description: "Screenshots"
+        type: boolean
+        default: true
+      enable_zip:
+        description: "ZIP export"
+        type: boolean
+        default: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install chromium --with-deps
+
+      - name: Run
+        env:
+          MODE: ${{ github.event.inputs.mode }}
+          CONCURRENT: ${{ github.event.inputs.concurrent }}
+          MAX_PAGES: ${{ github.event.inputs.mode == 'light' && '50' || github.event.inputs.mode == 'complete' && '2000' || github.event.inputs.mode == 'aggressive' && '10000' || github.event.inputs.mode == 'nuclear' && '50000' || '500' }}
+          DOWNLOAD: ${{ github.event.inputs.enable_download == 'true' && 'true' || 'false' }}
+          CRAWL: ${{ github.event.inputs.enable_crawl == 'true' && 'true' || 'false' }}
+          API_SCRAPING: ${{ github.event.inputs.enable_api == 'true' && 'true' || 'false' }}
+          SECRET_EXTRACTION: ${{ github.event.inputs.enable_secrets == 'true' && 'true' || 'false' }}
+          SCREENSHOTS: ${{ github.event.inputs.enable_screenshots == 'true' && 'true' || 'false' }}
+          ZIP: ${{ github.event.inputs.enable_zip == 'true' && 'true' || 'false' }}
+          INTEL: "true"
+          ERROR_BYPASS: "true"
+          OUTPUT_DIR: ./output
+        run: node orchestrator.js "${{ github.event.inputs.target_url }}"
+
+      - name: Summary
+        if: always()
+        run: |
+          node -e "const fs=require('fs');let s='Zygor Scarper | instagram:@zygorlap\n';try{const m=JSON.parse(fs.readFileSync('output/mirror-manifest.json'));s+='Pages: '+m.stats.pages+' | Assets: '+m.stats.assets+' | '+(m.stats.bytes/1048576).toFixed(2)+' MB\n';}catch(e){s+='No mirror data\n';}fs.writeFileSync('output/SUMMARY.txt',s);console.log(s);"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.event.inputs.project_name }}-mirror
+          path: output/mirror/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.event.inputs.project_name }}-zip
+          path: output/mirror.zip
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.event.inputs.project_name }}-report
+          path: |
+            output/index.html
+            output/report.html
+            output/sitemap.xml
+            output/screenshots/
+            output/DISCLAIMER.txt
+            output/SUMMARY.txt
+            output/*.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## Zygor Scarper Done" >> $GITHUB_STEP_SUMMARY
+          echo "instagram:@zygorlap" >> $GITHUB_STEP_SUMMARY
+          [ -f output/SUMMARY.txt ] && cat output/SUMMARY.txt >> $GITHUB_STEP_SUMMARY
