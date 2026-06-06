@@ -61,7 +61,7 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      - name: Run
+      - name: Run Zygor Scarper (live logs)
         env:
           MODE: ${{ github.event.inputs.mode }}
           CONCURRENT: ${{ github.event.inputs.concurrent }}
@@ -75,12 +75,17 @@ jobs:
           INTEL: "true"
           ERROR_BYPASS: "true"
           OUTPUT_DIR: ./output
-        run: node orchestrator.js "${{ github.event.inputs.target_url }}"
+          NODE_OPTIONS: "--max-old-space-size=4096"
+          FORCE_COLOR: "0"
+        run: |
+          mkdir -p output
+          echo "::notice title=Live Logs::Progress prints every page — scroll this log for ETA and speed"
+          node orchestrator.js "${{ github.event.inputs.target_url }}" 2>&1 | tee output/console.log
 
       - name: Summary
         if: always()
         run: |
-          node -e "const fs=require('fs');let s='Zygor Scarper | instagram:@zygorlap\n';try{const m=JSON.parse(fs.readFileSync('output/mirror-manifest.json'));s+='Pages: '+m.stats.pages+' | Assets: '+m.stats.assets+' | '+(m.stats.bytes/1048576).toFixed(2)+' MB\n';}catch(e){s+='No mirror data\n';}fs.writeFileSync('output/SUMMARY.txt',s);console.log(s);"
+          node -e "const fs=require('fs');let s='Zygor Scarper v3.1 | instagram:@zygorlap\n';try{const m=JSON.parse(fs.readFileSync('output/mirror-manifest.json'));s+='Pages: '+m.stats.pages+' | Assets: '+m.stats.assets+' | '+(m.stats.bytes/1048576).toFixed(2)+' MB\n';s+='Fast HTTP: '+m.stats.fastHits+' | Browser: '+m.stats.browserHits+'\n';}catch(e){s+='No mirror data\n';}fs.writeFileSync('output/SUMMARY.txt',s);console.log(s);"
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -105,10 +110,14 @@ jobs:
           path: |
             output/index.html
             output/report.html
+            output/progress.html
             output/sitemap.xml
             output/screenshots/
             output/DISCLAIMER.txt
             output/SUMMARY.txt
+            output/live.log
+            output/live-progress.json
+            output/console.log
             output/*.json
           retention-days: 30
           if-no-files-found: ignore
@@ -116,6 +125,11 @@ jobs:
       - name: Job summary
         if: always()
         run: |
-          echo "## Zygor Scarper Done" >> $GITHUB_STEP_SUMMARY
+          echo "## Zygor Scarper v3.1" >> $GITHUB_STEP_SUMMARY
           echo "instagram:@zygorlap" >> $GITHUB_STEP_SUMMARY
           [ -f output/SUMMARY.txt ] && cat output/SUMMARY.txt >> $GITHUB_STEP_SUMMARY
+          if [ -f output/live-progress.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Final progress snapshot" >> $GITHUB_STEP_SUMMARY
+            node -e "const p=require('./output/live-progress.json');console.log('- Pages:',p.pages+'/'+p.total);console.log('- Assets:',p.assets);console.log('- Speed:',p.pagesPerMin,'pg/min');" >> $GITHUB_STEP_SUMMARY
+          fi

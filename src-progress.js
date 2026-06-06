@@ -1,20 +1,13 @@
 import { EventEmitter } from 'events';
 
 export class ProgressTracker extends EventEmitter {
-  constructor() {
+  constructor(liveLogger = null) {
     super();
+    this.live = liveLogger;
     this.state = {
-      phase: 'idle',
-      current: 0,
-      total: 0,
-      url: '',
-      pages: 0,
-      assets: 0,
-      bytes: 0,
-      errors: 0,
-      speed: 0,
-      elapsed: 0,
-      log: []
+      phase: 'idle', current: 0, total: 0, url: '',
+      pages: 0, assets: 0, bytes: 0, errors: 0, queue: 0,
+      speed: 0, elapsed: 0, log: []
     };
     this._start = Date.now();
     this._lastBytes = 0;
@@ -25,6 +18,7 @@ export class ProgressTracker extends EventEmitter {
     this.state.phase = phase;
     this.state.total = total;
     this.state.current = 0;
+    if (this.live) this.live.state.phase = phase;
     this.emit('update', this.snapshot());
   }
 
@@ -38,6 +32,7 @@ export class ProgressTracker extends EventEmitter {
       this._lastTick = now;
     }
     this.state.elapsed = Math.round((now - this._start) / 1000);
+    if (this.live) this.live.progress({ ...this.state });
     this.emit('update', this.snapshot());
   }
 
@@ -45,6 +40,7 @@ export class ProgressTracker extends EventEmitter {
     const entry = { t: new Date().toISOString(), level, msg };
     this.state.log.unshift(entry);
     if (this.state.log.length > 200) this.state.log.pop();
+    if (this.live) this.live.log(msg, level);
     this.emit('log', entry);
     this.emit('update', this.snapshot());
   }

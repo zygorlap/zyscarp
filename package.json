@@ -1,6 +1,6 @@
 {
   "name": "zygor-scarper",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "GitHub Actions website mirror downloader with API discovery by @zygorlap",
   "type": "module",
   "main": "orchestrator.js",

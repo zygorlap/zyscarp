@@ -2,7 +2,7 @@ export const WATERMARK = {
   brand: 'Zygor Scarper',
   instagram: '@zygorlap',
   tagline: 'The Ultimate Free Website Mirror & Intelligence Suite',
-  version: '3.0.0'
+  version: '3.1.0'
 };
 
 export const DISCLAIMER = `ZYGOR SCARPER - LEGAL DISCLAIMER
