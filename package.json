@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node orchestrator.js",
     "cli": "node cli.js",
+    "hybrid": "node hybrid-cli.js",
     "help": "node cli.js help",
     "config": "node cli.js config",
     "presets": "node cli.js presets",
