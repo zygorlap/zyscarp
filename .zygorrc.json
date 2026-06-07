@@ -1,0 +1,59 @@
+{
+  "name": "Default Configuration",
+  "description": "Standard balanced configuration for most websites",
+  
+  "target": "https://example.com",
+  "mode": "fast",
+  "preset": "gentle",
+  
+  "maxPages": 500,
+  "concurrent": 16,
+  "outputDir": "./output",
+  
+  "timing": {
+    "delay": 200,
+    "timeout": 20000,
+    "rateLimit": 1000
+  },
+  
+  "features": {
+    "enableDownload": true,
+    "enableCrawl": true,
+    "enableApiScraping": true,
+    "enableSecretExtraction": false,
+    "enableErrorBypass": true,
+    "enableScreenshots": true,
+    "enableZip": true,
+    "enableIntel": true,
+    "enableMetrics": true
+  },
+  
+  "advanced": {
+    "respectRobotsTxt": true,
+    "userAgentRotation": true,
+    "proxy": null,
+    "retries": 5,
+    "caching": false,
+    "deltaSync": false,
+    "compression": false
+  },
+  
+  "logging": {
+    "logLevel": "info",
+    "logFile": null,
+    "logFormat": "json"
+  },
+  
+  "export": {
+    "formats": ["json"],
+    "includeMetrics": true,
+    "includeReport": true
+  },
+  
+  "comments": {
+    "note1": "Edit 'target' to your website URL",
+    "note2": "Available modes: light, fast, complete, aggressive, nuclear",
+    "note3": "Available presets: stealth, gentle, aggressive, performance",
+    "note4": "Set 'logLevel' to 'debug' for detailed logs"
+  }
+}

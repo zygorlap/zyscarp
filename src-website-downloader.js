@@ -7,7 +7,6 @@ import {
   parseTarget, isSameOrigin, resolveUrl, urlToLocalPath,
   isDownloadableAsset, getExtension
 } from './src-path-resolver.js';
-import { injectHtmlWatermark, injectCssWatermark, injectJsWatermark } from './src-watermark.js';
 import { rewriteHtmlLinks, rewriteCssUrls } from './src-offline-rewriter.js';
 import { fetchSeedUrls } from './src-seed-parser.js';
 import { createFastClient, fastGetText, fastGetBuffer, needsBrowserRender } from './src-fast-fetch.js';
@@ -94,58 +93,112 @@ export class WebsiteDownloader {
 
   extractUrls($, pageUrl) {
     const found = new Set();
-    for (const sel of SELECTORS) {
-      $(sel).each((_, el) => {
-        for (const attr of ['href', 'src', 'data', 'action', 'content', 'poster']) {
-          const val = $(el).attr(attr);
-          if (val) { const r = resolveUrl(val, pageUrl); if (r) found.add(r); }
-        }
-        const srcset = $(el).attr('srcset');
-        if (srcset) {
-          srcset.split(',').forEach(part => {
-            const r = resolveUrl(part.trim().split(/\s+/)[0], pageUrl);
-            if (r) found.add(r);
+    try {
+      for (const sel of SELECTORS) {
+        try {
+          $(sel).each((_, el) => {
+            try {
+              for (const attr of ['href', 'src', 'data', 'action', 'content', 'poster']) {
+                const val = $(el).attr(attr);
+                if (val) { 
+                  const r = resolveUrl(val, pageUrl); 
+                  if (r) found.add(r); 
+                }
+              }
+              const srcset = $(el).attr('srcset');
+              if (srcset) {
+                srcset.split(',').forEach(part => {
+                  const [u] = part.trim().split(/\s+/);
+                  if (u) {
+                    const r = resolveUrl(u, pageUrl);
+                    if (r) found.add(r);
+                  }
+                });
+              }
+            } catch (e) {
+              // Skip individual element errors
+            }
           });
+        } catch (e) {
+          // Skip selector errors
         }
-      });
-    }
-    const inline = [$('style').html(), $('[style]').map((_, e) => $(e).attr('style')).get().join(' ')].join('\n');
-    let m;
-    const urlRegex = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
-    while ((m = urlRegex.exec(inline)) !== null) {
-      const r = resolveUrl(m[1], pageUrl);
-      if (r) found.add(r);
+      }
+      
+      // Extract from inline styles
+      try {
+        const styles = [];
+        $('style').each((_, el) => {
+          const html = $(el).html();
+          if (html) styles.push(html);
+        });
+        $('[style]').each((_, el) => {
+          const style = $(el).attr('style');
+          if (style) styles.push(style);
+        });
+        const inline = styles.join('\n');
+        
+        const urlRegex = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
+        let m;
+        while ((m = urlRegex.exec(inline)) !== null) {
+          const r = resolveUrl(m[1], pageUrl);
+          if (r) found.add(r);
+        }
+      } catch (e) {
+        // Skip inline style errors
+      }
+    } catch (e) {
+      // Silently continue with partial results
     }
     return [...found];
   }
 
   extractFromJs(code, pageUrl) {
     const found = new Set();
-    for (const regex of JS_URL_PATTERNS) {
-      const re = new RegExp(regex.source, regex.flags);
-      let match;
-      while ((match = re.exec(code)) !== null) {
-        const r = resolveUrl(match[1], pageUrl);
-        if (r) found.add(r);
+    try {
+      if (!code || code.length === 0) return found;
+      for (const regex of JS_URL_PATTERNS) {
+        try {
+          const re = new RegExp(regex.source, regex.flags);
+          let match;
+          while ((match = re.exec(code)) !== null) {
+            if (match[1]) {
+              const r = resolveUrl(match[1], pageUrl);
+              if (r) found.add(r);
+            }
+          }
+        } catch (e) {
+          // Skip regex errors
+        }
       }
+    } catch (e) {
+      // Continue with partial results
     }
     return [...found];
   }
 
   parseCssImports(css, cssUrl) {
     const found = new Set();
-    const importRe = /@import\s+(?:url\()?['"]?([^'")\s;]+)['"]?\)?/gi;
-    let m;
-    while ((m = importRe.exec(css)) !== null) {
-      const r = resolveUrl(m[1], cssUrl);
-      if (r) found.add(r);
-    }
-    const urlRe = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
-    while ((m = urlRe.exec(css)) !== null) {
-      if (!m[1].startsWith('data:')) {
-        const r = resolveUrl(m[1], cssUrl);
-        if (r) found.add(r);
+    try {
+      if (!css || css.length === 0) return found;
+      
+      const importRe = /@import\s+(?:url\()?['"]?([^'")\s;]+)['"]?\)?/gi;
+      let m;
+      while ((m = importRe.exec(css)) !== null) {
+        if (m[1]) {
+          const r = resolveUrl(m[1], cssUrl);
+          if (r) found.add(r);
+        }
       }
+      
+      const urlRe = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
+      while ((m = urlRe.exec(css)) !== null) {
+        if (m[1] && !m[1].startsWith('data:')) {
+          const r = resolveUrl(m[1], cssUrl);
+          if (r) found.add(r);
+        }
+      }
+    } catch (e) {
+      // Continue with partial results
     }
     return [...found];
   }
@@ -168,33 +221,47 @@ export class WebsiteDownloader {
   async saveContent(url, content, contentType) {
     const localPath = urlToLocalPath(url, this.outputDir, this.targetInfo.hostname);
     const dir = path.dirname(localPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    try {
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    } catch (e) {
+      this.log(`Warning: Failed to create directory ${dir}: ${e.message}`, 'warn');
+      return null;
+    }
     const ext = path.extname(localPath);
     const cssImports = [];
 
-    if (contentType.includes('text/html') || ext === '.html' || ext === '.htm' || ext === '.php') {
-      let html = Buffer.isBuffer(content) ? content.toString('utf-8') : content;
-      html = rewriteHtmlLinks(html, url, this.outputDir, this.targetInfo.hostname);
-      html = injectHtmlWatermark(html);
-      content = Buffer.from(html, 'utf-8');
-      this.stats.pages++;
-    } else if (contentType.includes('text/css') || ext === '.css') {
-      let css = Buffer.isBuffer(content) ? content.toString('utf-8') : content;
-      cssImports.push(...this.parseCssImports(css, url));
-      css = rewriteCssUrls(css, url, this.outputDir, this.targetInfo.hostname);
-      css = injectCssWatermark(css);
-      content = Buffer.from(css, 'utf-8');
-      this.stats.assets++;
-    } else if (contentType.includes('javascript') || ext === '.js' || ext === '.mjs') {
-      let js = Buffer.isBuffer(content) ? content.toString('utf-8') : content;
-      js = injectJsWatermark(js);
-      content = Buffer.from(js, 'utf-8');
-      this.stats.assets++;
-    } else {
-      this.stats.assets++;
+    try {
+      if (contentType.includes('text/html') || ext === '.html' || ext === '.htm' || ext === '.php') {
+        let html = Buffer.isBuffer(content) ? content.toString('utf-8') : content;
+        html = rewriteHtmlLinks(html, url, this.outputDir, this.targetInfo.hostname);
+        // Keep downloaded pages clean - no visible watermark
+        content = Buffer.from(html, 'utf-8');
+        this.stats.pages++;
+      } else if (contentType.includes('text/css') || ext === '.css') {
+        let css = Buffer.isBuffer(content) ? content.toString('utf-8') : content;
+        cssImports.push(...this.parseCssImports(css, url));
+        css = rewriteCssUrls(css, url, this.outputDir, this.targetInfo.hostname);
+        content = Buffer.from(css, 'utf-8');
+        this.stats.assets++;
+      } else if (contentType.includes('javascript') || ext === '.js' || ext === '.mjs') {
+        let js = Buffer.isBuffer(content) ? content.toString('utf-8') : content;
+        content = Buffer.from(js, 'utf-8');
+        this.stats.assets++;
+      } else {
+        this.stats.assets++;
+      }
+    } catch (e) {
+      this.log(`Warning: Failed to process ${url}: ${e.message}`, 'warn');
+      return null;
     }
 
-    fs.writeFileSync(localPath, content);
+    try {
+      fs.writeFileSync(localPath, content);
+    } catch (e) {
+      this.log(`Error: Failed to write ${localPath}: ${e.message}`, 'error');
+      return null;
+    }
+    
     const entry = { url, localPath, size: content.length, contentType };
     this.downloaded.set(url, entry);
     this.stats.bytes += content.length;
@@ -213,41 +280,62 @@ export class WebsiteDownloader {
       const { status, data, headers } = await fastGetBuffer(this.http, url);
       if (status >= 400) {
         this.stats.errors++;
+        if (retries < this.mode.retries - 1) {
+          await new Promise(r => setTimeout(r, 500 * (retries + 1)));
+          return this.downloadAsset(url, retries + 1);
+        }
         this.errors.push({ url, status });
         return null;
       }
-      return await this.saveContent(url, data, headers['content-type'] || '');
+      const contentType = (headers['content-type'] || '').toLowerCase();
+      return await this.saveContent(url, data, contentType);
     } catch (e) {
-      if (retries < this.mode.retries) {
+      if (retries < this.mode.retries - 1) {
         await new Promise(r => setTimeout(r, 500 * (retries + 1)));
         return this.downloadAsset(url, retries + 1);
       }
       this.stats.errors++;
-      this.errors.push({ url, error: e.message });
+      this.errors.push({ url, error: e.message, retries });
       return null;
     }
   }
 
   parseHtml(html, url) {
-    const $ = cheerio.load(html);
-    const discovered = new Set(this.extractUrls($, url));
-    $('script:not([src])').each((_, el) => {
-      this.extractFromJs($(el).html() || '', url).forEach(u => discovered.add(u));
-    });
-    return [...discovered];
+    try {
+      const $ = cheerio.load(html, { decodeEntities: false, preserveWhitespace: true });
+      const discovered = new Set(this.extractUrls($, url));
+      $('script:not([src])').each((_, el) => {
+        const code = $(el).html() || '';
+        if (code && code.length > 0) {
+          this.extractFromJs(code, url).forEach(u => discovered.add(u));
+        }
+      });
+      return [...discovered];
+    } catch (e) {
+      this.log(`HTML parse error for ${url.slice(0, 80)}: ${e.message}`, 'warn');
+      return [];
+    }
   }
 
   async fetchPageFast(url) {
     try {
       const { status, data, headers } = await fastGetText(this.http, url);
-      if (status >= 400) return null;
+      if (status >= 400) {
+        this.log(`Page fetch failed (${status}): ${url.slice(0, 80)}`, 'warn');
+        return null;
+      }
       const html = typeof data === 'string' ? data : String(data);
+      if (!html || html.trim().length === 0) {
+        this.log(`Empty response: ${url.slice(0, 80)}`, 'warn');
+        return null;
+      }
       if (needsBrowserRender(html)) return null;
       this.stats.fastHits++;
       const urls = this.parseHtml(html, url);
       await this.saveContent(url, html, headers['content-type'] || 'text/html');
       return urls;
-    } catch {
+    } catch (e) {
+      this.log(`Fast fetch error: ${url.slice(0, 80)}: ${e.message}`, 'warn');
       return null;
     }
   }
@@ -305,12 +393,19 @@ export class WebsiteDownloader {
       await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: this.mode.timeout });
       await this.spaScroll();
       const html = await this.page.content();
+      if (!html || html.trim().length === 0) {
+        this.log(`Browser rendered empty page: ${url.slice(0, 80)}`, 'warn');
+        this.stats.errors++;
+        this.errors.push({ url, error: 'Empty HTML from browser', phase: 'browser' });
+        return [];
+      }
       this.stats.browserHits++;
       const urls = this.parseHtml(html, url);
       await this.saveContent(url, html, 'text/html');
       return urls;
     } catch (e) {
       this.stats.errors++;
+      this.log(`Browser fetch error: ${url.slice(0, 80)}: ${e.message}`, 'warn');
       this.errors.push({ url, error: e.message, phase: 'browser' });
       return [];
     }

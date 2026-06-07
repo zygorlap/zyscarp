@@ -1,21 +1,59 @@
 {
   "name": "zygor-scarper",
-  "version": "3.1.0",
-  "description": "GitHub Actions website mirror downloader with API discovery by @zygorlap",
+  "version": "3.2.0",
+  "description": "Enterprise-grade website mirror & intelligence suite with dashboard, scheduling, and plugins",
   "type": "module",
   "main": "orchestrator.js",
-  "scripts": {
-    "start": "node orchestrator.js"
+  "bin": {
+    "zygor": "cli.js"
   },
-  "keywords": ["website-mirror", "github-actions", "web-scraper", "zygorlap"],
+  "scripts": {
+    "start": "node orchestrator.js",
+    "cli": "node cli.js",
+    "help": "node cli.js help",
+    "config": "node cli.js config",
+    "presets": "node cli.js presets",
+    "dev": "NODE_ENV=development node orchestrator.js"
+  },
+  "keywords": [
+    "website-mirror",
+    "web-scraper",
+    "crawler",
+    "github-actions",
+    "enterprise",
+    "dashboard",
+    "analytics",
+    "@zygorlap"
+  ],
   "author": "@zygorlap",
   "license": "MIT",
-  "engines": { "node": ">=18.0.0" },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "archiver": "^7.0.0",
     "axios": "^1.6.0",
     "bottleneck": "^2.19.5",
     "cheerio": "^1.0.0-rc.12",
-    "playwright": "^1.40.0"
+    "playwright": "^1.40.0",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.1",
+    "table": "^6.8.0",
+    "dotenv": "^16.3.1",
+    "winston": "^3.11.0",
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "jest": "^29.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zygorlap/zygor-scarper"
+  },
+  "bugs": {
+    "url": "https://github.com/zygorlap/zygor-scarper/issues"
   }
 }
