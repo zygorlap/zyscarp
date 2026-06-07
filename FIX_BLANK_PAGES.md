@@ -1,6 +1,7 @@
 ### 🎯 Fix for Your Blank Page Issue
 
 You're experiencing blank pages because the website likely:
+
 - Uses heavy JavaScript rendering
 - Has anti-scraping measures
 - Requires specific browser behavior
@@ -13,17 +14,20 @@ You're experiencing blank pages because the website likely:
 ## Quick Fix (Try This Now)
 
 ### Option 1: Auto-Smart Mode (Recommended)
+
 ```bash
 npm run hybrid -- --target "https://your-website.com"
 ```
 
 This will:
+
 1. Try your fast built-in scraper
 2. Automatically detect if page is blank
 3. Fall back to SaveWeb2Zip API if needed
 4. Save result to `./downloads/`
 
 ### Option 2: Force API (Maximum Reliability)
+
 ```bash
 npm run hybrid -- --target "https://your-website.com" --api-only
 ```
@@ -31,6 +35,7 @@ npm run hybrid -- --target "https://your-website.com" --api-only
 Use this for tricky websites that always fail.
 
 ### Option 3: Private Mode (No External API)
+
 ```bash
 npm run hybrid -- --target "https://your-website.com" --builtin-only
 ```
@@ -59,17 +64,20 @@ npm run hybrid -- --target "https://t3bac.com" --api-only
 ## What You'll Get
 
 ✅ **Downloaded website** in `./downloads/` folder
+
 - Complete HTML with all assets
 - CSS, JavaScript, images included
 - No watermarks or broken links
 
 ✅ **Smart fallback** handles:
+
 - JavaScript-rendered content
 - Anti-bot protection
 - Dynamic page loading
 - Complex frameworks (React, Vue, etc.)
 
 ✅ **Statistics** showing:
+
 - Which method worked (built-in or API)
 - Number of files downloaded
 - Total size
@@ -80,11 +88,13 @@ npm run hybrid -- --target "https://t3bac.com" --api-only
 ## Understanding the Methods
 
 ### Built-in Scraper (Method 1)
+
 - **Speed**: ⚡ Fast (seconds)
 - **Data Privacy**: 🔒 Stays on your machine
 - **Best for**: Simple, static websites
 
 ### SaveWeb2Zip API (Method 2 - Fallback)
+
 - **Speed**: 🐢 Slower (minutes)
 - **Compatibility**: ✅ Works on difficult sites
 - **Best for**: JavaScript-heavy, protected sites
@@ -113,26 +123,31 @@ npm run hybrid -- --target "https://example.com" --api-only --timeout 300000
 ## Advanced Options
 
 ### Download multiple sites at once:
+
 ```bash
 npm run hybrid -- --target "https://site1.com" "https://site2.com" "https://site3.com"
 ```
 
 ### Custom output directory:
+
 ```bash
 npm run hybrid -- --target "https://example.com" --output "./my-downloads"
 ```
 
 ### Include linked pages (for SaveWeb2Zip):
+
 ```bash
 npm run hybrid -- --target "https://example.com" --api-first --links-only --max-pages 50
 ```
 
 ### Longer timeout for complex sites:
+
 ```bash
 npm run hybrid -- --target "https://example.com" --timeout 300000
 ```
 
 ### See help:
+
 ```bash
 npm run hybrid -- --help
 ```
@@ -141,15 +156,15 @@ npm run hybrid -- --help
 
 ## Why This Works Better Than HTTrack
 
-| Feature | HTTrack | Zygor Hybrid |
-|---------|---------|-------------|
-| JavaScript rendering | ❌ No | ✅ Yes |
-| Fallback mechanism | ❌ No | ✅ Yes |
-| Blank page detection | ❌ No | ✅ Auto |
-| Multiple strategies | ❌ No | ✅ Yes |
-| Anti-bot handling | ❌ Basic | ✅ Advanced |
-| Modern websites | ⚠️ Poor | ✅ Good |
-| Watermarks | ⚠️ Sometimes | ✅ Never |
+| Feature              | HTTrack      | Zygor Hybrid |
+| -------------------- | ------------ | ------------ |
+| JavaScript rendering | ❌ No        | ✅ Yes       |
+| Fallback mechanism   | ❌ No        | ✅ Yes       |
+| Blank page detection | ❌ No        | ✅ Auto      |
+| Multiple strategies  | ❌ No        | ✅ Yes       |
+| Anti-bot handling    | ❌ Basic     | ✅ Advanced  |
+| Modern websites      | ⚠️ Poor      | ✅ Good      |
+| Watermarks           | ⚠️ Sometimes | ✅ Never     |
 
 ---
 
@@ -184,6 +199,7 @@ This is normal with SaveWeb2Zip API - it's working hard to get the content!
 ### "Getting errors"
 
 Most common causes:
+
 1. **URL is wrong** - Double-check the website address
 2. **Site blocked access** - Try from your browser first
 3. **Network timeout** - Increase `--timeout` value
@@ -194,13 +210,13 @@ Most common causes:
 ## Using It in Your Code
 
 ```javascript
-import HybridWebsiteDownloader from './src-hybrid-downloader.js';
+import HybridWebsiteDownloader from "./src-hybrid-downloader.js";
 
 const downloader = new HybridWebsiteDownloader({
-  outputDir: './downloads',
+  outputDir: "./downloads",
 });
 
-const result = await downloader.download('https://example.com');
+const result = await downloader.download("https://example.com");
 
 if (result.success) {
   console.log(`✅ Downloaded with ${result.method}`);
@@ -215,6 +231,7 @@ if (result.success) {
 ## Next Steps
 
 1. **Try it now:**
+
    ```bash
    npm run hybrid -- --target "https://your-site.com"
    ```
@@ -238,6 +255,7 @@ if (result.success) {
 ## Summary
 
 **You now have a professional-grade website downloader that:**
+
 - ✅ Handles blank pages automatically
 - ✅ Works better than HTTrack
 - ✅ Has intelligent fallback strategies
